@@ -8,7 +8,9 @@
 # <!> *SAVE YOUR PARAMETERS IN THE parameters/ DICRECTORY* <!>
 ############################################################################
 
-def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
+from amine_model import cleverlytics_anonymization_algorithm
+
+def anonymize(input_audio_path, params): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
     """
     anonymization algorithm
 
@@ -26,12 +28,15 @@ def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
         The sample rate of the processed audio.
     """
 
-    # Read the source audio file
+    # mcadams_coeff=0.9
+    # pitch_shift_steps=3
+    # gain_db=15
+    # use_noise_reduction=True
+    # mfcc_encryption=True
 
-    # Apply your anonymization algorithm
-    
-    # Output:
-    audio = ...
-    sr = ...
+    # params = {'mcadams_coeff': mcadams_coeff, 'pitch_shift_steps': pitch_shift_steps, 'gain_db': gain_db, 'use_noise_reduction': use_noise_reduction, 'mfcc_encryption': mfcc_encryption}
+
+    audio, sr = cleverlytics_anonymization_algorithm(input_audio_path, **params)
+
     
     return audio, sr

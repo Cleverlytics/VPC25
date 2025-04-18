@@ -32,7 +32,7 @@ run() {
 
     # Ensure required packages are installed
     python -m pip install --upgrade pip
-    pip install -r requirements.txt -q
+    pip install -r requirements.txt
 
     # Set evaluation directory (default: "evaluation_data/")
     EVAL_DIR=${1:-"evaluation_data/"}
