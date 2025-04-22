@@ -8,7 +8,8 @@ from tqdm import tqdm
 import argparse
 
 def cleverlytics_anonymization_algorithm(
-    input_audio_path, 
+    input_directory, 
+    output_directory, 
     mcadams_coeff=1, 
     pitch_shift_steps=3, 
     gain_db=15, 
@@ -27,6 +28,8 @@ def cleverlytics_anonymization_algorithm(
         use_noise_reduction (bool, optional): Whether to apply noise reduction. Defaults to False.
         mfcc_encryption (bool, optional): Whether to apply MFCC hashing. Defaults to True.
     """
+    os.makedirs(output_directory, exist_ok=True)
+
     def apply_mcadams_coefficient(frequency, mcadams_coeff):
         f0 = 0  # Reference frequency
         return f0 + (frequency - f0) ** mcadams_coeff
@@ -67,15 +70,23 @@ def cleverlytics_anonymization_algorithm(
         y5 = np.clip(y4 * gain, -1.0, 1.0)
         return y5, sr
 
-    params = {'mcadams_coeff': mcadams_coeff, 'pitch_shift_steps': pitch_shift_steps, 'gain_db': gain_db, 'use_noise_reduction': use_noise_reduction, 'mfcc_encryption': mfcc_encryption}
-    try:
-        anonymized_audio, sr = process_audio_file(input_audio_path)
-        print("Anonymization procedure is complete!")
-        return anonymized_audio, sr
-    except Exception as e:
-        print(f"Error processing {input_audio_path}: {e}")
+    audio_files = [f for f in os.listdir(input_directory) if f.lower().endswith(('.wav', '.mp3', '.flac', '.ogg'))]
 
-    
+    def create_filename(base_name, params):
+        return f"{base_name}_MC{int(params['mcadams_coeff']*10)}_PS{params['pitch_shift_steps']}_G{params['gain_db']}_NR{'T' if params['use_noise_reduction'] else 'F'}_MCENC{'T' if params['mfcc_encryption'] else 'F'}.wav"
+
+    for filename in tqdm(audio_files, desc="Anonymizing Audio Files"):
+        input_path = os.path.join(input_directory, filename)
+        params = {'mcadams_coeff': mcadams_coeff, 'pitch_shift_steps': pitch_shift_steps, 'gain_db': gain_db, 'use_noise_reduction': use_noise_reduction, 'mfcc_encryption': mfcc_encryption}
+        output_filename = create_filename(filename, params)
+        output_path = os.path.join(output_directory, output_filename)
+        try:
+            anonymized_audio, sr = process_audio_file(input_path)
+            sf.write(output_path, anonymized_audio, sr)
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+
+    print("Anonymization procedure is complete!")
 
 def main():
     parser = argparse.ArgumentParser(description='Anonymize audio files in a directory.')
