@@ -1,16 +1,16 @@
 import os
 import numpy as np
 import librosa
+import scipy.signal
 import soundfile as sf
 import noisereduce as nr
 import hashlib
 from tqdm import tqdm
 import argparse
-from librosa.core import lpc as librosa_lpc
-import scipy
 
 def cleverlytics_anonymization_algorithm(
-    input_audio_path, 
+    input_directory, 
+    output_directory, 
     mcadams_coeff=1, 
     pitch_shift_steps=3, 
     gain_db=15, 
@@ -29,10 +29,12 @@ def cleverlytics_anonymization_algorithm(
         use_noise_reduction (bool, optional): Whether to apply noise reduction. Defaults to False.
         mfcc_encryption (bool, optional): Whether to apply MFCC hashing. Defaults to True.
     """
+    os.makedirs(output_directory, exist_ok=True)
+
     def apply_mcadams_coefficient(frequency, mcadams_coeff):
         f0 = 0  # Reference frequency
         return f0 + (frequency - f0) ** mcadams_coeff
-    
+
     def mcadams_anonym(y, sr, winLengthinms=20, shiftLengthinms=10, lp_order=20, mcadams=0.8):
         eps = np.finfo(np.float32).eps
         sig = y + eps
@@ -54,7 +56,7 @@ def cleverlytics_anonymization_algorithm(
         for m in np.arange(1, Nframes):
             index = np.arange(m * shift, np.minimum(m * shift + winlen, length_sig))
             frame = sig[index] * win
-            a_lpc = librosa_lpc(frame + eps, order = lp_order)
+            a_lpc = librosa.core.lpc(frame + eps, lp_order)
             poles = scipy.signal.tf2zpk(np.array([1]), a_lpc)[1]
             ind_imag = np.where(np.isreal(poles) == False)[0]
             ind_imag_con = ind_imag[np.arange(0, np.size(ind_imag), 2)]
@@ -110,21 +112,29 @@ def cleverlytics_anonymization_algorithm(
         else:
             y2 = y1
         y3 = librosa.effects.pitch_shift(y2, sr=sr, n_steps=pitch_shift_steps)
-        y3 = librosa.effects.time_stretch(y3, rate=1.1)
+        y3 = y3.speedup(playback_speed=1.1)
         y4 = nr.reduce_noise(y=y3, sr=sr) if use_noise_reduction else y3
         gain = 10 ** (gain_db / 20)
         y5 = np.clip(y4 * gain, -1.0, 1.0)
         return y5, sr
 
-    params = {'mcadams_coeff': mcadams_coeff, 'pitch_shift_steps': pitch_shift_steps, 'gain_db': gain_db, 'use_noise_reduction': use_noise_reduction, 'mfcc_encryption': mfcc_encryption}
-    try:
-        anonymized_audio, sr = process_audio_file(input_audio_path)
-        print("Anonymization procedure is complete!")
-        return anonymized_audio, sr
-    except Exception as e:
-        print(f"Error processing {input_audio_path}: {e}")
+    audio_files = [f for f in os.listdir(input_directory) if f.lower().endswith(('.wav', '.mp3', '.flac', '.ogg'))]
 
-    
+    def create_filename(base_name, params):
+        return f"{base_name}_MC{int(params['mcadams_coeff']*10)}_PS{params['pitch_shift_steps']}_G{params['gain_db']}_NR{'T' if params['use_noise_reduction'] else 'F'}_MCENC{'T' if params['mfcc_encryption'] else 'F'}.wav"
+
+    for filename in tqdm(audio_files, desc="Anonymizing Audio Files"):
+        input_path = os.path.join(input_directory, filename)
+        params = {'mcadams_coeff': mcadams_coeff, 'pitch_shift_steps': pitch_shift_steps, 'gain_db': gain_db, 'use_noise_reduction': use_noise_reduction, 'mfcc_encryption': mfcc_encryption}
+        output_filename = create_filename(filename, params)
+        output_path = os.path.join(output_directory, output_filename)
+        try:
+            anonymized_audio, sr = process_audio_file(input_path)
+            sf.write(output_path, anonymized_audio, sr)
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+
+    print("Anonymization procedure is complete!")
 
 def main():
     parser = argparse.ArgumentParser(description='Anonymize audio files in a directory.')
