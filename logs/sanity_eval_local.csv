@@ -1,0 +1,5 @@
+speaker,file,src_dbfs,anon_dbfs,proc_time_s,out_path,cos_src_anon
+spk0001,spk0001\1272-128104-0000.wav,-24.16,-23.00,94.661,evaluation_data\anonymized_local\spk0001\1272-128104-0000.wav,0.3963
+spk0001,spk0001\1272-128104-0001.wav,-21.82,-23.00,2.530,evaluation_data\anonymized_local\spk0001\1272-128104-0001.wav,0.2376
+spk0002,spk0002\1462-170138-0000.wav,-23.50,-23.00,6.504,evaluation_data\anonymized_local\spk0002\1462-170138-0000.wav,0.1371
+spk0002,spk0002\1462-170138-0001.wav,-24.87,-23.00,1.991,evaluation_data\anonymized_local\spk0002\1462-170138-0001.wav,0.2731
